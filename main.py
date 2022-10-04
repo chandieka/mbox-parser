@@ -1,24 +1,22 @@
 #!/usr/bin/env python3
 
 from datetime import datetime
+from genericpath import isfile
 import json
 import os
 import sys
 import mailbox
-
-FILE_PATH = './data/fradulent_emails.txt' # change this to ur desired file
-FILE_NAME = f"[{datetime.now().timestamp()}]{os.path.basename(os.path.splitext(FILE_PATH)[0])}.json"
 
 def log(text):
     fs = open("log.txt", mode="a")
     fs.write(text)
     fs.close()
 
-def mboxToJson(mbox: mailbox.mbox,mode="raw"):
+def mboxToJson(mbox: mailbox.mbox):
     temp = {}
     try:
         for i, message in enumerate(mbox):
-            print(f"[{datetime.now().isoformat()}] Processing mail: {i}")
+            log(f"[{datetime.now().isoformat()}] Processing mail: {i}\n")
             mailBytes = message.as_bytes();
             temp[i] = {
                 "raw_mail": mailBytes.decode('ascii', 'ignore'),
@@ -33,21 +31,24 @@ def mboxToJson(mbox: mailbox.mbox,mode="raw"):
         log(e.__str__())
     return temp
 
-def saveJson(arr):
-    fs = open(f'{FILE_NAME}',"w")
+def saveJson(arr, filename):
+    fs = open(f'{filename}',"w")
     fs.write(json.dumps(arr))
     fs.close()
 
-def saveRaw(arr):
-    fs = open("temp.txt","w")
-    fs.write(arr.__str__())
-    fs.close()
-
 def main():
-    mbox = mailbox.mbox(FILE_PATH)
-    arr = mboxToJson(mbox)
-    # saveRaw(arr)
-    saveJson(arr)
+    for i, arg in enumerate(sys.argv):
+        if(i == 0):
+            continue
+        if isfile(arg):
+            FILE_PATH = arg
+            FILE_NAME = f"[{datetime.now().timestamp()}]{os.path.basename(os.path.splitext(FILE_PATH)[0])}.json"
+            
+            mbox = mailbox.mbox(FILE_PATH)
+            arr = mboxToJson(mbox)
+            saveJson(arr, FILE_NAME)
+        else:
+            print(f"{arg} is not a file")
             
 if __name__ == "__main__":
     sys.exit(main())
