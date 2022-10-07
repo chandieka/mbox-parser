@@ -42,6 +42,17 @@ def saveJson(arr, filename):
     fs.write(json.dumps(arr))
     fs.close()
 
+def removeNonAscii(path: str, filename: str):
+    fs = open(path, 'rb');
+    bytes = fs.readlines()
+    fs.close()
+    
+    cleanTexts = b''.join(bytes).decode('ascii', 'ignore')
+    
+    fs = open(filename, 'w')
+    fs.write(cleanTexts)
+    fs.close()
+
 def main():
     for i, arg in enumerate(sys.argv):
         if(i == 0):
@@ -76,7 +87,9 @@ def test():
         print("Processing: ", PATH)
         FILE_NAME = f"{os.path.basename(os.path.splitext(PATH)[0])}.json"
         
-        mbox = mailbox.mbox(PATH)
+        removeNonAscii(PATH, 'temp.txt')
+        
+        mbox = mailbox.mbox('temp.txt')
         print(PATH, "Contains:", len(mbox), "emails")
         
         arr = mboxToJson(mbox)
@@ -85,6 +98,8 @@ def test():
         
         endTime = datetime.now()
         print("timetaken:", (endTime - startTime).total_seconds(), "Seconds")
+        mbox.close()
+    os.remove('temp.txt')
     
 if __name__ == "__main__":
     sys.exit(test())
