@@ -14,30 +14,27 @@ def log(text):
 
 def mboxToJson(mbox: mailbox.mbox):
     template = {}
-    try:
-        for i, message in enumerate(mbox):
-            log(f"[{datetime.now().isoformat()}] Processing mail: {i}\n")
-            mailBytes = message.as_bytes();
+    for i, message in enumerate(mbox):
+        # log(f"[{datetime.now().isoformat()}] Processing mail: {i}\n")
+        mailBytes = message.as_bytes();
+        
+        if message.is_multipart():
+            messagebody = ''.join(part.get_payload().__str__() for part in message.get_payload())
+        else:
+            messagebody = message.get_payload()
             
-            if message.is_multipart():
-                messagebody = ''.join(part.get_payload() for part in message.get_payload())
-            else:
-                messagebody = message.get_payload()
-                
-            template[i] = {
-                "raw_mail": mailBytes.decode('ascii', 'ignore'),
-                "subject": f'{message["Subject"]}',
-                "from": f'{message["From"]}',
-                "to": f'{message["To"]}',
-                "status": f'{message["Status"]}',
-                "date": f'{message["Date"]}',
-                # "date_dtype": f'{type(message["Date"])}',
-                "body": f'{messagebody}',
-                # "body_dtype": f'{type(messagebody)}'
-                }
+        template[i] = {
+            "raw_mail": mailBytes.decode('ascii', 'ignore'),
+            "subject": f'{message["Subject"]}',
+            "from": f'{message["From"]}',
+            "to": f'{message["To"]}',
+            "status": f'{message["Status"]}',
+            "date": f'{message["Date"]}',
+            # "date_dtype": f'{type(message["Date"])}',
+            "body": f'{messagebody}',
+            # "body_dtype": f'{type(messagebody)}'
+            }
             
-    except Exception as e:
-        log(e.__str__())
     return template
 
 def saveJson(arr, filename):
@@ -50,22 +47,44 @@ def main():
         if(i == 0):
             continue
         if isfile(arg):
+            startTime = datetime.now()
+            
             FILE_PATH = arg
-            # FILE_NAME = f"[{datetime.now().timestamp()}]{os.path.basename(os.path.splitext(FILE_PATH)[0])}.json"
             FILE_NAME = f"{os.path.basename(os.path.splitext(FILE_PATH)[0])}.json"
+            print("Processing: ", FILE_PATH)
             
             mbox = mailbox.mbox(FILE_PATH)
+            print(FILE_PATH, "Contains:", len(mbox), "emails")
             arr = mboxToJson(mbox)
+            
+            print("Total parsed emails:", len(arr))
             saveJson(arr, FILE_NAME)
+            
+            endTime = datetime.now()
+            print("timetaken:", (endTime - startTime).total_seconds(), "Seconds")
         else:
             print(f"{arg} is not a file")
     
 def test():
-    PATH = "./data/fradulent_emails.txt"
-    FILE_NAME = f"{os.path.basename(os.path.splitext(PATH)[0])}.json"
-    mbox = mailbox.mbox(PATH)
-    arr = mboxToJson(mbox)
-    saveJson(arr, FILE_NAME)
+    PATHS = [
+        "./data/fradulent_emails.txt",
+        "./data/phishing-chorpus.txt"
+        ]
+    for PATH in PATHS:
+        startTime = datetime.now()
+        
+        print("Processing: ", PATH)
+        FILE_NAME = f"{os.path.basename(os.path.splitext(PATH)[0])}.json"
+        
+        mbox = mailbox.mbox(PATH)
+        print(PATH, "Contains:", len(mbox), "emails")
+        
+        arr = mboxToJson(mbox)
+        print("Total parsed emails:", len(arr))
+        saveJson(arr, FILE_NAME)
+        
+        endTime = datetime.now()
+        print("timetaken:", (endTime - startTime).total_seconds(), "Seconds")
     
 if __name__ == "__main__":
     sys.exit(test())
